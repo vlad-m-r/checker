@@ -6,3 +6,5 @@ vendor
 .gitsecret/keys/random_seed
 !*.secret
 checker.zip
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup

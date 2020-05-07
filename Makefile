@@ -2,13 +2,12 @@ export AWS_PROFILE := $(AWS_PROFILE)
 export AWS_DEFAULT_REGION := $(shell aws configure get region --profile $(AWS_PROFILE))
 
 CONFIG := config.yaml
-#CONFIG_SHA256 := $(shell grep $(CONFIG) .gitsecret/paths/mapping.cfg | awk -F ':' '{print $2}')
 LAMBDA := "lambda.go"
-INTERVAL ?= "*/10 * * * *"
+INTERVAL ?= "rate(15 minutes)"
 
 build: decrypt
 	GOOS=linux go build $(LAMBDA)
-	zip checker.zip lambda config.yaml
+	zip checker.zip lambda $(CONFIG)
 	rm -f lambda
 	mv checker.zip terraform
 
@@ -21,10 +20,24 @@ destroy:
 plan: build
 	cd terraform && terraform plan -var=interval=$(INTERVAL) && rm -f checker.zip
 
-CHECKSUM := ./$(CONFIG)-$(shell md5sum $(CONFIG))
+CONFIG := $(CONFIG)-$(shell md5sum $(CONFIG))
+TF_STATE  := ./terraform/terraform.tfstate-$(shell md5sum ./terraform/terraform.tfstate)
+TF_STATE_BACKUP := ./terraform/terraform.tfstate.backup-$(shell md5sum ./terraform/terraform.tfstate.backup)
 
 .PHONY: encrypt
-encrypt: $(CHECKSUM)
+encrypt: $(CHECKSUM) $(TF_STATE) $(TF_STATE_BACKUP)
+
+$(TF_STATE):
+	git secret add ./terraform/terraform.tfstate
+	git secret hide
+	rm -f ./terraform/terraform.tfstate-*
+	touch $@
+
+$(TF_STATE_BACKUP):
+	git secret add ./terraform/terraform.tfstate.backup
+	git secret hide
+	rm -f ./terraform/terraform.tfstate.backup-*
+	touch $@
 
 $(CHECKSUM):
 	git secret add $(CONFIG)
