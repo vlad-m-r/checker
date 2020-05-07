@@ -73,6 +73,11 @@ func (a *AwsClient) sendSESMail(results []*CheckResult, emailClient *EmailClient
 
 func (a *AwsClient) constructEmail(results []*CheckResult, emailClient *EmailClient) *ses.SendEmailInput {
 	var messages []string
+	var ToAddresses []*string
+
+	for _, address := range strings.Split(emailClient.Yaml.To, ",") {
+		ToAddresses = append(ToAddresses, aws.String(address))
+	}
 
 	for _, checkResult := range results {
 		for _, err := range checkResult.err {
@@ -85,9 +90,7 @@ func (a *AwsClient) constructEmail(results []*CheckResult, emailClient *EmailCli
 			CcAddresses: []*string{
 				aws.String(emailClient.Yaml.CC),
 			},
-			ToAddresses: []*string{
-				aws.String(emailClient.Yaml.To),
-			},
+			ToAddresses: ToAddresses,
 		},
 		Message: &ses.Message{
 			Body: &ses.Body{
