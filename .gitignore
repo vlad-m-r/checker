@@ -1,0 +1,8 @@
+.vendor
+.terraform
+config.yaml
+vendor
+.idea
+.gitsecret/keys/random_seed
+!*.secret
+checker.zip
