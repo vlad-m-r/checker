@@ -1,5 +1,8 @@
 export AWS_PROFILE := $(AWS_PROFILE)
 export AWS_DEFAULT_REGION := $(shell aws configure get region --profile $(AWS_PROFILE))
+
+CONFIG := config.yaml
+#CONFIG_SHA256 := $(shell grep $(CONFIG) .gitsecret/paths/mapping.cfg | awk -F ':' '{print $2}')
 LAMBDA := "lambda.go"
 INTERVAL ?= "*/10 * * * *"
 
@@ -18,14 +21,21 @@ destroy:
 plan: build
 	cd terraform && terraform plan -var=interval=$(INTERVAL) && rm -f checker.zip
 
-encrypt:
-	git secret add config.yaml
+CHECKSUM := ./$(CONFIG)-$(shell md5sum $(CONFIG))
+
+.PHONY: encrypt
+encrypt: $(CHECKSUM)
+
+$(CHECKSUM):
+	git secret add $(CONFIG)
 	git secret hide
+	rm -f ./$(CONFIG)-*
+	touch $@
 
 decrypt:
 	git secret reveal -f
 
-
 push: encrypt
 	git add .
-	git commit -F
+	git commit
+	git push
