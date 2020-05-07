@@ -1,12 +1,12 @@
 export AWS_PROFILE := $(AWS_PROFILE)
 export AWS_DEFAULT_REGION := $(shell aws configure get region --profile $(AWS_PROFILE))
-
+LAMBDA := "lambda.go"
 INTERVAL ?= "*/10 * * * *"
 
 build: decrypt
-	GOOS=linux go build main.go
-	zip checker.zip main config.yaml
-	rm -f main
+	GOOS=linux go build $(LAMBDA)
+	zip checker.zip lambda config.yaml
+	rm -f lambda
 	mv checker.zip terraform
 
 apply: build

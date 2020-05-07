@@ -2,7 +2,7 @@ resource "aws_lambda_function" "default" {
   filename         = "${var.project}.zip"
   function_name    = var.project
   role             = aws_iam_role.lambda_iam_role.arn
-  handler          = "main"
+  handler          = "lambda"
   source_code_hash = filebase64sha256("${var.project}.zip")
   runtime          = "go1.x"
 }
