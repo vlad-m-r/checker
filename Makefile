@@ -1,48 +1,58 @@
 export AWS_PROFILE := $(AWS_PROFILE)
 export AWS_DEFAULT_REGION := $(shell aws configure get region --profile $(AWS_PROFILE))
 
-CONFIG := config.yaml
+YAML := config.yaml
 LAMBDA := "lambda.go"
 INTERVAL ?= "rate(15 minutes)"
+TF_ARGS := -var=interval=$(INTERVAL)
 
-build: decrypt
+build:
 	GOOS=linux go build $(LAMBDA)
-	zip checker.zip lambda $(CONFIG)
+	zip checker.zip lambda $(YAML)
 	rm -f lambda
 	mv checker.zip terraform
 
-apply: build
-	cd terraform && terraform apply -var=interval=$(INTERVAL) -auto-approve && rm -f checker.zip
+tf_apply: build
+	cd terraform && terraform apply $(TF_ARGS) -auto-approve
 
-destroy:
-	cd terraform && terraform destroy
+tf_destroy:
+	cd terraform && terraform destroy $(TF_ARGS)
 
-plan: build
-	cd terraform && terraform plan -var=interval=$(INTERVAL) && rm -f checker.zip
+tf_plan: build
+	cd terraform && terraform plan $(TF_ARGS)
 
-CONFIG := $(CONFIG)-$(shell md5sum $(CONFIG))
+tf_clean:
+	cd terraform && rm -f checker.zip
+
+clean_tf_state:
+	rm -f ./terraform/terraform.tfstate-*
+	rm -f ./terraform/terraform.tfstate.backup-*
+
+destroy: tf_destroy clean_tf_state tf_clean encrypt
+apply: tf_apply clean_tf_state tf_clean encrypt
+plan: tf_plan
+
+CONFIG := $(YAML)-$(shell md5sum $(YAML))
 TF_STATE  := ./terraform/terraform.tfstate-$(shell md5sum ./terraform/terraform.tfstate)
 TF_STATE_BACKUP := ./terraform/terraform.tfstate.backup-$(shell md5sum ./terraform/terraform.tfstate.backup)
 
 .PHONY: encrypt
-encrypt: $(CHECKSUM) $(TF_STATE) $(TF_STATE_BACKUP)
+encrypt: $(CONFIG) $(TF_STATE) $(TF_STATE_BACKUP)
 
 $(TF_STATE):
 	git secret add ./terraform/terraform.tfstate
 	git secret hide
-	rm -f ./terraform/terraform.tfstate-*
 	touch $@
 
 $(TF_STATE_BACKUP):
 	git secret add ./terraform/terraform.tfstate.backup
 	git secret hide
-	rm -f ./terraform/terraform.tfstate.backup-*
 	touch $@
 
-$(CHECKSUM):
-	git secret add $(CONFIG)
+$(CONFIG):
+	rm -f $(YAML)-*
+	git secret add $(YAML)
 	git secret hide
-	rm -f ./$(CONFIG)-*
 	touch $@
 
 decrypt:
