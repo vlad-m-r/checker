@@ -42,17 +42,20 @@ encrypt: $(CONFIG) $(TF_STATE) $(TF_STATE_BACKUP)
 $(TF_STATE):
 	git secret add ./terraform/terraform.tfstate
 	git secret hide
+	git add $@
 	touch $@
 
 $(TF_STATE_BACKUP):
 	git secret add ./terraform/terraform.tfstate.backup
 	git secret hide
+	git add $@
 	touch $@
 
 $(CONFIG):
 	rm -f $(YAML)-*
 	git secret add $(YAML)
 	git secret hide
+	git add $@
 	touch $@
 
 decrypt:
