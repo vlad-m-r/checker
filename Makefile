@@ -32,7 +32,7 @@ destroy: tf_destroy clean_tf_state tf_clean encrypt
 apply: tf_apply clean_tf_state tf_clean encrypt
 plan: tf_plan
 
-CONFIG := $(YAML)-$(shell md5sum $(YAML))
+CONFIG := ./$(YAML)-$(shell md5sum $(YAML))
 TF_STATE  := ./terraform/terraform.tfstate-$(shell md5sum ./terraform/terraform.tfstate)
 TF_STATE_BACKUP := ./terraform/terraform.tfstate.backup-$(shell md5sum ./terraform/terraform.tfstate.backup)
 
@@ -42,21 +42,21 @@ encrypt: $(CONFIG) $(TF_STATE) $(TF_STATE_BACKUP)
 $(TF_STATE):
 	git secret add ./terraform/terraform.tfstate
 	git secret hide
-	git add $@
 	touch $@
+	git add $@
 
 $(TF_STATE_BACKUP):
 	git secret add ./terraform/terraform.tfstate.backup
 	git secret hide
-	git add $@
 	touch $@
+	git add $@
 
 $(CONFIG):
 	rm -f $(YAML)-*
 	git secret add $(YAML)
 	git secret hide
-	git add $@
 	touch $@
+	git add $@
 
 decrypt:
 	git secret reveal -f
