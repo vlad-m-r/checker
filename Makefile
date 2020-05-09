@@ -11,21 +11,21 @@ build: decrypt
 	zip terraform/checker.zip lambda $(YAML)
 	rm -f lambda
 
-tf_apply: build
+tf_apply: tf_plan
 	cd terraform && terraform apply $(TF_ARGS) -auto-approve
 
 tf_destroy:
 	cd terraform && terraform destroy $(TF_ARGS)
 
-tf_plan: build
+tf_plan:
 	cd terraform && terraform plan $(TF_ARGS)
 
 tf_clean:
 	rm -f terraform/checker.zip
 
 destroy: tf_destroy tf_clean encrypt
-apply: tf_apply tf_clean encrypt
-plan: tf_plan
+apply: build tf_apply tf_clean encrypt
+plan: build tf_plan
 
 encrypt:
 	git secret hide -m
