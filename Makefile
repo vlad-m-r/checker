@@ -6,11 +6,10 @@ LAMBDA := "lambda.go"
 INTERVAL ?= "rate(15 minutes)"
 TF_ARGS := -var=interval=$(INTERVAL)
 
-build:
+build: decrypt
 	GOOS=linux go build $(LAMBDA)
-	zip checker.zip lambda $(YAML)
+	zip terraform/checker.zip lambda $(YAML)
 	rm -f lambda
-	mv checker.zip terraform
 
 tf_apply: build
 	cd terraform && terraform apply $(TF_ARGS) -auto-approve
@@ -22,43 +21,16 @@ tf_plan: build
 	cd terraform && terraform plan $(TF_ARGS)
 
 tf_clean:
-	cd terraform && rm -f checker.zip
+	rm -f terraform/checker.zip
 
-clean_tf_state:
-	rm -f ./terraform/terraform.tfstate-*
-	rm -f ./terraform/terraform.tfstate.backup-*
-
-destroy: tf_destroy clean_tf_state tf_clean encrypt
-apply: tf_apply clean_tf_state tf_clean encrypt
+destroy: tf_destroy tf_clean encrypt
+apply: tf_apply tf_clean encrypt
 plan: tf_plan
 
-CONFIG := ./$(YAML)-$(shell md5sum $(YAML))
-TF_STATE  := ./terraform/terraform.tfstate-$(shell md5sum ./terraform/terraform.tfstate)
-TF_STATE_BACKUP := ./terraform/terraform.tfstate.backup-$(shell md5sum ./terraform/terraform.tfstate.backup)
+encrypt:
+	git secret hide -m
 
-.PHONY: encrypt
-encrypt: $(CONFIG) $(TF_STATE) $(TF_STATE_BACKUP)
-
-$(TF_STATE):
-	git secret add ./terraform/terraform.tfstate
-	git secret hide
-	touch $@
-	git add $@
-
-$(TF_STATE_BACKUP):
-	git secret add ./terraform/terraform.tfstate.backup
-	git secret hide
-	touch $@
-	git add $@
-
-$(CONFIG):
-	rm -f $(YAML)-*
-	git secret add $(YAML)
-	git secret hide
-	touch $@
-	git add $@
-
-decrypt:
+decrypt: encrypt
 	git secret reveal -f
 
 push: encrypt
