@@ -1,0 +1,39 @@
+AwsClient:
+  region: eu-central-1
+  profile: default
+
+EmailClient:
+  From: from@something.com
+  To: to0@something.com,to1@something.com
+  CC: cc0@something.com,cc1@something.com
+  Subject: Email Subject
+
+HttpClient:
+  InsecureSkipVerify: true
+  ResponseHeaderTimeout: 10
+
+Concurrency:
+  Limit: 10
+
+Checks:
+  - name: Check1
+    url: https://google.com
+    requests:
+      - method: POST
+        payload: '{"key1": "value1", "key2": "value2"}'
+        asserts:
+          - type: keyExists
+            key: token
+
+  - name: Check2
+    url: https://google.com
+    requests:
+      - method: POST
+        payload: '{"key1": "value1", "key2": "value2"}'
+        asserts:
+          - type: keyExists
+            key: token
+      - method: GET
+        asserts:
+          - type: keyExists
+            key: token

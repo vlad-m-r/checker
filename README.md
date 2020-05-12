@@ -25,13 +25,8 @@ git clone git@github.com:vlad-m-r/checker.git
 go mod vendor
 ```
 
-## Prepare config
+Create configuration file `config.yaml` in the root directory (refer to [config.example.yaml](../blob/master/config.example.yaml))
 
-The app requires yaml configuration yaml to function
-
-
-
-
-
-## Usage
-
+```shell script
+go run main.go
+```
