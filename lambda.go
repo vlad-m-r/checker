@@ -8,7 +8,7 @@ import (
 )
 
 func HandleRequest(ctx context.Context, name models.LambdaEvent) (string, error) {
-	controllers.RunChecks("config.yaml")
+	controllers.RunChecks("config.yaml", false)
 	return "Done", nil
 }
 

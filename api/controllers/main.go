@@ -5,13 +5,13 @@ import (
 	"log"
 )
 
-func RunChecks(yamlFile string) {
+func RunChecks(yamlFile string, includeCredentials bool) {
 
 	// Load yaml file
 	yamlContent := utils.ReadYaml(yamlFile)
 
 	NewHttpClient(yamlContent)
-	awsClient := NewAwsClient(yamlContent)
+	awsClient := NewAwsClient(yamlContent, includeCredentials)
 	emailClient := NewEmailClient(yamlContent)
 	concurrencyController := NewConcurrencyController(yamlContent)
 

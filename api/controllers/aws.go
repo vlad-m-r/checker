@@ -18,10 +18,10 @@ const (
 	CharSet = "UTF-8"
 )
 
-func NewAwsClient(yamlContent []byte) *AwsClient {
+func NewAwsClient(yamlContent []byte, includeCredentials bool) *AwsClient {
 	awsClient := AwsClient{}
 	awsClient.UnmarshalYaml(yamlContent)
-	awsClient.createSession()
+	awsClient.createSession(includeCredentials)
 	return &awsClient
 }
 
@@ -38,11 +38,16 @@ func (a *AwsClient) UnmarshalYaml(yamlContent []byte) {
 	}
 }
 
-func (a *AwsClient) createSession() {
-	s, err := session.NewSession(&aws.Config{
+func (a *AwsClient) createSession(includeCredentials bool) {
+	cfg := &aws.Config{
 		Region:      aws.String(a.Yaml.Region),
-		Credentials: credentials.NewSharedCredentials(a.Yaml.CredsFile, a.Yaml.Profile),
-	})
+	}
+
+	if includeCredentials {
+		cfg.Credentials = credentials.NewSharedCredentials(a.Yaml.CredsFile, a.Yaml.Profile)
+	}
+
+	s, err := session.NewSession(cfg)
 
 	if err != nil {
 		log.Fatal("Failed to create AWS credentials session:", err)
