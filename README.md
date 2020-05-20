@@ -21,12 +21,20 @@ For AWS
 git clone git@github.com:vlad-m-r/checker.git
 ```
 
+Delete existing secrets:
+
 ```shell script
-go mod vendor
+make prepare
 ```
 
 Create configuration file `config.yaml` in the root directory (refer to [config.example.yaml](../master/config.example.yaml))
 
 ```shell script
+go mod vendor
+```
+
+```shell script
 go run main.go
 ```
+
+

@@ -6,7 +6,7 @@ LAMBDA := "lambda.go"
 INTERVAL ?= "rate(15 minutes)"
 TF_ARGS := -var=interval=$(INTERVAL)
 
-build: decrypt
+build:
 	GOOS=linux go build $(LAMBDA)
 	zip terraform/checker.zip lambda $(YAML)
 	rm -f lambda
@@ -30,10 +30,13 @@ plan: build tf_plan
 encrypt:
 	git secret hide -m
 
-decrypt: encrypt
+decrypt:
 	git secret reveal -f
 
 push: encrypt
 	git add .
 	git commit
 	git push
+
+prepare:
+	git secret remove -c
