@@ -51,7 +51,17 @@ func (r *RequestController) runCheck(request models.Request) {
 		ioReader = nil
 	}
 
-	response, httpError := http.Post(r.URL, "application/json", ioReader)
+	var response *http.Response
+	var httpError error
+
+	switch request.Method {
+	case http.MethodPost:
+		response, httpError = http.Post(r.URL, "application/json", ioReader)
+	case http.MethodGet:
+		response, httpError = http.Get(r.URL)
+	default:
+		httpError = errors.New("unknown method: " + request.Method)
+	}
 
 	if httpError != nil {
 		r.recordError("The HTTP request failed with error: " + httpError.Error())
@@ -60,7 +70,9 @@ func (r *RequestController) runCheck(request models.Request) {
 	if response != nil {
 		defer response.Body.Close()
 
-		if response.StatusCode != 200 {
+		statusOK := response.StatusCode >= 200 && response.StatusCode < 300
+
+		if !statusOK {
 			r.recordError("bad response code:" + response.Status)
 		}
 
