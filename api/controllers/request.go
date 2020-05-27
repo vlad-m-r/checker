@@ -57,6 +57,18 @@ func (r *RequestController) runCheck(request models.Request) {
 	switch request.Method {
 	case http.MethodPost:
 		response, httpError = http.Post(r.URL, "application/json", ioReader)
+	case http.MethodPut:
+		req, err := http.NewRequest("PUT", r.URL, ioReader)
+
+		if err != nil {
+			r.recordError("The HTTP request failed with error: " + err.Error())
+		}
+
+		if req != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		response, httpError = http.DefaultClient.Do(req)
 	case http.MethodGet:
 		response, httpError = http.Get(r.URL)
 	default:
