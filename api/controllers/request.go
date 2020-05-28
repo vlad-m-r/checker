@@ -80,6 +80,13 @@ func (r *RequestController) runCheck(request models.Request) {
 	}
 
 	if response != nil {
+		bodyBytes, err := ioutil.ReadAll(response.Body)
+
+		if err == nil {
+			bodyString := string(bodyBytes)
+			log.Println(bodyString)
+		}
+
 		defer response.Body.Close()
 
 		statusOK := response.StatusCode >= 200 && response.StatusCode < 300
