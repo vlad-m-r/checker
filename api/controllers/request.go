@@ -84,7 +84,7 @@ func (r *RequestController) runCheck(request models.Request) {
 
 		if err == nil {
 			bodyString := string(bodyBytes)
-			log.Printf("%s (method %s): %s", r.Name, request.Method, bodyString)
+			log.Printf("%s (method %s): %s", r.URL, request.Method, bodyString)
 		}
 
 		defer response.Body.Close()
