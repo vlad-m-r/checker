@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/vlad-m-r/checker/api/models"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -38,6 +40,31 @@ func RequestControllerFactory(check models.Check, sChan chan struct{}, rChan cha
 	}
 }
 
+func formatRequest(r *http.Request) string {
+	// Create return string
+	var request []string // Add the request string
+
+	//url := fmt.Sprintf("Method: %v, URL: %v, Proto: %v", r.Method, r.URL, r.Proto)
+	request = append(request, "Method: "+r.Method)
+	request = append(request, "URL: "+r.URL.String())
+	request = append(request, "Proto: "+r.Proto)
+	request = append(request, fmt.Sprintf("Host: %v", r.Host)) // Loop through headers
+	for name, headers := range r.Header {
+		name = strings.ToLower(name)
+		for _, h := range headers {
+			request = append(request, fmt.Sprintf("Header - %v: %v", name, h))
+		}
+	}
+
+	// If this is a POST, add post data
+	if r.Method == "POST" {
+		_ = r.ParseForm()
+		request = append(request, "Form: "+r.Form.Encode())
+	} // Return the request as a string
+
+	return strings.Join(request, "\n")
+}
+
 func (r *RequestController) runCheck(request models.Request) {
 	start := time.Now()
 
@@ -53,61 +80,80 @@ func (r *RequestController) runCheck(request models.Request) {
 
 	var response *http.Response
 	var httpError error
+	var req *http.Request
+	var reqError error
 
+	// Create request
 	switch request.Method {
 	case http.MethodPost:
-		response, httpError = http.Post(r.URL, "application/json", ioReader)
-	case http.MethodPut:
-		req, err := http.NewRequest("PUT", r.URL, ioReader)
-
-		if err != nil {
-			r.recordError("The HTTP request failed with error: " + err.Error())
-		}
-
+		req, reqError = http.NewRequest(http.MethodPost, r.URL, ioReader)
 		if req != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
-
-		response, httpError = http.DefaultClient.Do(req)
+	case http.MethodPut:
+		req, reqError = http.NewRequest(http.MethodPut, r.URL, ioReader)
+		if req != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
 	case http.MethodGet:
-		response, httpError = http.Get(r.URL)
+		req, reqError = http.NewRequest(http.MethodGet, r.URL, ioReader)
+		//response, httpError = http.Get(r.URL)
+
 	default:
 		httpError = errors.New("unknown method: " + request.Method)
 	}
 
-	if httpError != nil {
-		r.recordError("The HTTP request failed with error: " + httpError.Error())
+	if reqError != nil {
+		httpError = errors.New("reqError: " + reqError.Error())
 	}
 
-	if response != nil {
-		bodyBytes, err := ioutil.ReadAll(response.Body)
-
-		if err == nil {
-			bodyString := string(bodyBytes)
-			log.Printf("%s (method %s): %s", r.URL, request.Method, bodyString)
-		}
-
-		defer response.Body.Close()
-
-		statusOK := response.StatusCode >= 200 && response.StatusCode < 300
-
-		if !statusOK {
-			r.recordError("bad response code:" + response.Status)
-		}
-
-		responseBody, readError := ioutil.ReadAll(response.Body)
-		if readError != nil {
-			r.recordError("Failed to read response body:" + response.Status)
-		}
-
-		var data map[string]interface{}
-		if unmarshalError := json.Unmarshal(responseBody, &data); unmarshalError != nil {
-			r.recordError("Failed to unmarshal output to interface:" + response.Status)
-		}
-
-		r.runAsserts(request, data)
+	if req == nil {
+		httpError = errors.New("req is nil ")
 	} else {
-		r.recordError("got empty response from server")
+		// Add headers
+		for _, header := range request.Headers {
+			req.Header.Set(header.Name, header.Value)
+		}
+
+		log.Println("Request prepared: " + formatRequest(req))
+
+		// Fire request
+		response, httpError = http.DefaultClient.Do(req)
+
+		if httpError != nil {
+			r.recordError("The HTTP request failed with error: " + httpError.Error())
+		}
+
+		if response != nil {
+			bodyBytes, err := ioutil.ReadAll(response.Body)
+
+			if err == nil {
+				bodyString := string(bodyBytes)
+				log.Printf("%s (method %s): %s", r.URL, request.Method, bodyString)
+			}
+
+			defer response.Body.Close()
+
+			statusOK := response.StatusCode >= 200 && response.StatusCode < 300
+
+			if !statusOK {
+				r.recordError("bad response code:" + response.Status)
+			}
+
+			responseBody, readError := ioutil.ReadAll(response.Body)
+			if readError != nil {
+				r.recordError("Failed to read response body:" + response.Status)
+			}
+
+			var data map[string]interface{}
+			if unmarshalError := json.Unmarshal(responseBody, &data); unmarshalError != nil {
+				r.recordError("Failed to unmarshal output to interface: " + response.Status)
+			}
+
+			r.runAsserts(request, data)
+		} else {
+			r.recordError("got empty response from server")
+		}
 	}
 
 	seconds := time.Since(start).Seconds()

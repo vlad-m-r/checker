@@ -50,7 +50,13 @@ type Check struct {
 type Request struct {
 	Method  string   `yaml:"method"`
 	Payload string   `yaml:"payload"`
+	Headers []Header `yaml:"headers"`
 	Asserts []Assert `yaml:"asserts"`
+}
+
+type Header struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
 }
 
 type Assert struct {
