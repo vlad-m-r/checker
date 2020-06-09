@@ -126,6 +126,10 @@ func (r *RequestController) runCheck(request models.Request) {
 		if response != nil {
 			bodyBytes, err := ioutil.ReadAll(response.Body)
 
+			if err != nil {
+				r.recordError("Failed to read response body:" + response.Status)
+			}
+
 			if err == nil {
 				bodyString := string(bodyBytes)
 				log.Printf("%s (method %s): %s", r.URL, request.Method, bodyString)
@@ -139,13 +143,8 @@ func (r *RequestController) runCheck(request models.Request) {
 				r.recordError("bad response code:" + response.Status)
 			}
 
-			responseBody, readError := ioutil.ReadAll(response.Body)
-			if readError != nil {
-				r.recordError("Failed to read response body:" + response.Status)
-			}
-
 			var data map[string]interface{}
-			if unmarshalError := json.Unmarshal(responseBody, &data); unmarshalError != nil {
+			if unmarshalError := json.Unmarshal(bodyBytes, &data); unmarshalError != nil {
 				r.recordError("Failed to unmarshal output to interface: " + response.Status)
 			}
 
@@ -178,6 +177,7 @@ func (r *RequestController) runAsserts(request models.Request, response map[stri
 }
 
 func (r *RequestController) recordError(errorMessage string) {
+	log.Println("Recording error: " + errorMessage)
 	r.errors = append(r.errors, errors.New(errorMessage))
 	r.ErrorOccurred = true
 }
