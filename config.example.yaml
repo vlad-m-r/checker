@@ -21,6 +21,9 @@ Checks:
     requests:
       - method: POST
         payload: '{"key1": "value1", "key2": "value2"}'
+        headers:
+          - name: Header1Name
+            value: Header1Value
         asserts:
           - type: keyExists
             key: token
