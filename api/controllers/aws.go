@@ -20,7 +20,7 @@ const (
 
 func NewAwsClient(yamlContent []byte, includeCredentials bool) *AwsClient {
 	awsClient := AwsClient{}
-	awsClient.UnmarshalYaml(yamlContent)
+	awsClient.unmarshalYaml(yamlContent)
 	awsClient.createSession(includeCredentials)
 	return &awsClient
 }
@@ -31,7 +31,7 @@ type AwsClient struct {
 	EmailClient *EmailClient
 }
 
-func (a *AwsClient) UnmarshalYaml(yamlContent []byte) {
+func (a *AwsClient) unmarshalYaml(yamlContent []byte) {
 	err := yaml.Unmarshal(yamlContent, &a)
 	if err != nil {
 		log.Fatalf("Unmarshal error: %v", err)
@@ -40,7 +40,7 @@ func (a *AwsClient) UnmarshalYaml(yamlContent []byte) {
 
 func (a *AwsClient) createSession(includeCredentials bool) {
 	cfg := &aws.Config{
-		Region:      aws.String(a.Yaml.Region),
+		Region: aws.String(a.Yaml.Region),
 	}
 
 	if includeCredentials {
@@ -66,14 +66,23 @@ func (a *AwsClient) sendSESMail(results []*CheckResult, emailClient *EmailClient
 	// Assemble the email.
 	input := a.constructEmail(results, emailClient)
 
-	log.Println(input)
+	var listOfAddresses []string
 
-	// Attempt to send the email.
-	_, err := svc.SendEmail(input)
+	for _, cc := range input.Destination.ToAddresses {
+		listOfAddresses = append(listOfAddresses, *cc)
+	}
 
-	// Display error messages if they occur.
-	a.verifyEmailResponse(err)
+	if strings.Join(listOfAddresses, ",") != "" {
+		log.Println("Sending email")
 
+		// Attempt to send the email.
+		_, err := svc.SendEmail(input)
+
+		// Display error messages if they occur.
+		a.verifyEmailResponse(err)
+	} else {
+		log.Println("Skipping email")
+	}
 }
 
 func (a *AwsClient) constructEmail(results []*CheckResult, emailClient *EmailClient) *ses.SendEmailInput {

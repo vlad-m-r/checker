@@ -8,6 +8,7 @@ TF_ARGS := -var=interval=$(INTERVAL)
 
 build:
 	GOOS=linux go build $(LAMBDA)
+	GOOS=linux go build -o $$GOPATH/bin/checker main.go
 	zip terraform/checker.zip lambda $(YAML)
 	rm -f lambda
 
