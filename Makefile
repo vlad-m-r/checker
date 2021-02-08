@@ -13,13 +13,13 @@ build:
 	rm -f lambda
 
 tf_apply: tf_plan
-	cd terraform && terraform apply $(TF_ARGS) -auto-approve
+	cd terraform && terraform_13 apply $(TF_ARGS) -auto-approve
 
 tf_destroy:
-	cd terraform && terraform destroy $(TF_ARGS)
+	cd terraform && terraform_13 destroy $(TF_ARGS)
 
 tf_plan:
-	cd terraform && terraform plan $(TF_ARGS)
+	cd terraform && terraform_13 plan $(TF_ARGS)
 
 tf_clean:
 	rm -f terraform/checker.zip
